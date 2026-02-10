@@ -4,8 +4,10 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Download, FileText } from "lucide-react";
+import { useAuth } from "@/context/AuthContext.jsx"; // ✅ AJUSTE: JWT
 
 export function ProposalHistory({ projectId }) {
+  const { token } = useAuth(); // ✅ AJUSTE: JWT
   const [loading, setLoading] = useState(false);
   const [proposals, setProposals] = useState([]);
 
@@ -15,7 +17,11 @@ export function ProposalHistory({ projectId }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/propostas/history/${projectId}`);
+      const res = await fetch(`/api/propostas/history/${projectId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ AJUSTE: JWT
+        },
+      });
 
       if (!res.ok) {
         setProposals([]);
@@ -73,9 +79,9 @@ export function ProposalHistory({ projectId }) {
                 </div>
 
                 <div className="flex gap-2">
-                  {p.pdf_proposta && (
+                  {p.pdf_path && (
                     <a
-                      href={p.pdf_proposta}
+                      href={p.pdf_path}
                       target="_blank"
                       className="flex items-center px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition"
                     >
@@ -84,9 +90,9 @@ export function ProposalHistory({ projectId }) {
                     </a>
                   )}
 
-                  {p.pdf_contrato && (
+                  {p.contract_pdf_path && (
                     <a
-                      href={p.pdf_contrato}
+                      href={p.contract_pdf_path}
                       target="_blank"
                       className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
                     >

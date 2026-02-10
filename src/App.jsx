@@ -853,9 +853,9 @@ const response = await fetch("/api/projects/", {
                         </div>
 
                         <div className="flex gap-3">
-  {p.pdf_proposta && (
+  {p.pdf_path && (
     <a
-      href={p.pdf_proposta}
+      href={p.pdf_path}
       target="_blank"
       className="bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1"
     >
@@ -864,9 +864,9 @@ const response = await fetch("/api/projects/", {
     </a>
   )}
 
-  {p.pdf_contrato && (
+  {p.contract_pdf_path && (
     <a
-      href={p.pdf_contrato}
+      href={p.contract_pdf_path}
       target="_blank"
       className="bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-1"
     >
