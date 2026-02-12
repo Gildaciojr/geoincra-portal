@@ -4,10 +4,10 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Download, FileText } from "lucide-react";
-import { useAuth } from "@/context/AuthContext.jsx"; // ✅ AJUSTE: JWT
+import { useAuth } from "@/context/AuthContext.jsx"; // ✅ JWT
 
 export function ProposalHistory({ projectId }) {
-  const { token } = useAuth(); // ✅ AJUSTE: JWT
+  const { token } = useAuth(); // ✅ JWT
   const [loading, setLoading] = useState(false);
   const [proposals, setProposals] = useState([]);
 
@@ -19,7 +19,7 @@ export function ProposalHistory({ projectId }) {
     try {
       const res = await fetch(`/api/propostas/history/${projectId}`, {
         headers: {
-          Authorization: `Bearer ${token}`, // ✅ AJUSTE: JWT
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -68,7 +68,7 @@ export function ProposalHistory({ projectId }) {
                     Proposta #{p.id}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Área: {p.area_hectares} ha — Total:{" "}
+                    Área: {p.area} ha — Total:{" "}
                     <span className="font-semibold text-teal-700">
                       R$ {Number(p.total).toFixed(2)}
                     </span>
@@ -79,10 +79,11 @@ export function ProposalHistory({ projectId }) {
                 </div>
 
                 <div className="flex gap-2">
-                  {p.pdf_path && (
+                  {p.pdf_url && (
                     <a
-                      href={p.pdf_path}
+                      href={p.pdf_url}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center px-3 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition"
                     >
                       <Download className="w-4 h-4 mr-1" />
@@ -90,10 +91,11 @@ export function ProposalHistory({ projectId }) {
                     </a>
                   )}
 
-                  {p.contract_pdf_path && (
+                  {p.contract_url && (
                     <a
-                      href={p.contract_pdf_path}
+                      href={p.contract_url}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
                     >
                       <Download className="w-4 h-4 mr-1" />

@@ -11,8 +11,9 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
-import { UploadMatricula } from "./UploadMatricula.jsx";
-import { useAuth } from "@/context/AuthContext.jsx"; // ✅ NECESSÁRIO
+import { UploadDocumento } from "./UploadDocumento.jsx";
+import { useAuth } from "@/context/AuthContext.jsx";
+
 import {
   FileText,
   FileDown,
@@ -21,8 +22,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import {
+  downloadDocument,
+  // deleteDocument, // 🔥 pronto se quiser habilitar
+} from "@/services/documents.js";
+
 export function ProcessosTab({ selectedProject, documents, onRefresh }) {
-  const { token } = useAuth(); // ✅ JWT
+  const { token } = useAuth();
+
   const hasDocuments = useMemo(
     () => Array.isArray(documents) && documents.length > 0,
     [documents]
@@ -30,26 +37,16 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
 
   const handleDownload = async (doc) => {
     try {
-      const resp = await fetch(`/api/files/documents/${doc.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const blob = await downloadDocument(token, doc.id);
 
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data?.detail || "Falha ao baixar documento");
-      }
-
-      const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download =
         doc.original_filename ||
         doc.stored_filename ||
         `documento_${doc.id}`;
+
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -58,6 +55,18 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
       alert(err.message);
     }
   };
+
+  /*
+  const handleDelete = async (doc) => {
+    if (!confirm("Deseja realmente remover este documento?")) return;
+    try {
+      await deleteDocument(token, doc.id);
+      onRefresh();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+  */
 
   if (!selectedProject) {
     return (
@@ -68,7 +77,7 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
             Nenhum projeto selecionado
           </CardTitle>
           <CardDescription>
-            Selecione um projeto para visualizar documentos e enviar matrícula.
+            Selecione um projeto para visualizar documentos e enviar arquivos.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -77,7 +86,7 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-6">
-      {/* COLUNA DOCUMENTOS */}
+      {/* DOCUMENTOS */}
       <Card className="border-2 border-sky-200">
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
@@ -145,15 +154,27 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
                       </div>
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-sky-700 border-sky-300"
-                      onClick={() => handleDownload(doc)}
-                    >
-                      <FileDown className="w-3 h-3 mr-1" />
-                      Baixar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-sky-700 border-sky-300"
+                        onClick={() => handleDownload(doc)}
+                      >
+                        <FileDown className="w-3 h-3 mr-1" />
+                        Baixar
+                      </Button>
+
+                      {/*
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(doc)}
+                      >
+                        Remover
+                      </Button>
+                      */}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -166,14 +187,15 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
       <Card className="border-2 border-emerald-200 bg-emerald-50/60">
         <CardHeader>
           <CardTitle className="text-emerald-800">
-            Envio de Matrícula
+            Upload de Documentos
           </CardTitle>
           <CardDescription>
-            PDF ou imagem vinculados ao projeto.
+            Envie documentos vinculados ao projeto selecionado.
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          <UploadMatricula
+          <UploadDocumento
             projectId={selectedProject.id}
             onUploaded={onRefresh}
           />

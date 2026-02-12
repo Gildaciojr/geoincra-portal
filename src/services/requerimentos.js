@@ -1,6 +1,6 @@
 // src/services/requerimentos.js
 export async function listTemplates(token, categoria) {
-  const url = categoria ? `/api/templates?categoria=${encodeURIComponent(categoria)}` : `/api/templates`;
+  const url = categoria ? `/api/templates/?categoria=${encodeURIComponent(categoria)}` : `/api/templates/`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });

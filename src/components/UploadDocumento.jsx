@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { Label } from "@/components/ui/label.jsx";
-import { Select } from "@/components/ui/select.jsx";
 
 const DOCUMENT_TYPES = [
   { value: "matricula", label: "Matrícula do Imóvel" },
@@ -13,11 +13,13 @@ const DOCUMENT_TYPES = [
   { value: "comprovante_residencia", label: "Comprovante de Residência" },
   { value: "contrato_particular", label: "Contrato Particular" },
   { value: "planta_memorial", label: "Planta / Memorial" },
+  { value: "tecnico", label: "Documento Técnico" },
   { value: "outros", label: "Outros Documentos" },
 ];
 
 export function UploadDocumento({ projectId, onUploaded }) {
   const { token } = useAuth();
+  const fileInputRef = useRef(null);
 
   const [file, setFile] = useState(null);
   const [docType, setDocType] = useState("matricula");
@@ -54,11 +56,16 @@ export function UploadDocumento({ projectId, onUploaded }) {
       const data = await resp.json().catch(() => ({}));
 
       if (!resp.ok) {
-        throw new Error(data.detail || "Erro ao enviar arquivo");
+        throw new Error(data.detail || data.message || "Erro ao enviar arquivo");
       }
 
       alert("Documento enviado com sucesso!");
+
+      // 🔄 reset
       setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 
       if (onUploaded) onUploaded(data);
     } catch (err) {
@@ -90,13 +97,22 @@ export function UploadDocumento({ projectId, onUploaded }) {
         </select>
       </div>
 
-      <input
-        type="file"
-        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
+      <div>
+        <Label>Arquivo</Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="mt-1"
+        />
+      </div>
 
-      <Button onClick={upload} disabled={loading} className="w-full">
+      <Button
+        onClick={upload}
+        disabled={loading}
+        className="w-full bg-emerald-600 hover:bg-emerald-700"
+      >
         {loading ? "Enviando..." : "Enviar Documento"}
       </Button>
     </div>

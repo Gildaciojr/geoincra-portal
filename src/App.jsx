@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
 
+import { RequerimentosTab } from "./components/RequerimentosTab.jsx";
 import { ProcessosTab } from "./components/ProcessosTab.jsx";
 import { AutomacaoTab } from "./components/AutomacaoTab.jsx";
 import { CronogramaTab } from "./components/CronogramaTab.jsx";
@@ -70,15 +71,19 @@ function App() {
 
   // ➤ Estados do formulário de novo projeto
   const [newProject, setNewProject] = useState({
-    name: "",
-    description: "",
-    area_hectares: "",
-    owner_name: "",
-    owner_cpf: "",
-    property_ccir: "",
-    property_matricula: "",
-    municipio: "",
+  name: "",
+  description: "",
+  tipo_processo: "",
+  area_hectares: "",
+  municipio_id: null,
+  municipio: "",
+  uf: "",
+  owner_name: "",
+  owner_cpf: "",
+  property_ccir: "",
+  property_matricula: "",
   });
+
 
   // ================================
   // ESTADOS PARA MUNICÍPIOS (autocomplete)
@@ -108,7 +113,7 @@ const fetchProjects = async () => {
   if (!isAuthenticated) return;
 
   try {
-    const response = await fetch("/api/projects/", {
+    const response = await fetch("/api/projects/cards", {
       headers: {
         Authorization: `Bearer ${_token}`,
       },
@@ -233,44 +238,77 @@ useEffect(() => {
 }, [isAuthenticated, selectedProject]);
 
 
-  // ================================
-  // CREATE PROJECT
-  // ================================
-  const handleCreateProject = async (e) => {
-    e.preventDefault();
+// ================================
+// CREATE PROJECT
+// ================================
+const handleCreateProject = async (e) => {
+  e.preventDefault();
 
-    try {
-const response = await fetch("/api/projects/", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${_token}`,
-  },
-  body: JSON.stringify({
-    ...newProject,
-    area_hectares: parseFloat(newProject.area_hectares),
-  }),
-});
+  try {
+    const response = await fetch("/api/projects/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${_token}`,
+      },
+      body: JSON.stringify({
+        // PROJETO
+        name: newProject.name,
+        descricao_simplificada: newProject.description,
+        tipo_processo: newProject.tipo_processo || null,
 
+        municipio: newProject.municipio,
+        uf: newProject.uf,
 
-      if (response.ok) {
-        alert("Projeto criado com sucesso!");
-        setNewProject({
-          name: "",
-          description: "",
-          area_hectares: "",
-          owner_name: "",
-          owner_cpf: "",
-          property_ccir: "",
-          property_matricula: "",
-          municipio: "",
-        });
-        fetchProjects();
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
+        codigo_imovel_rural: newProject.property_ccir,
+        codigo_sncr: null,
+        codigo_car: null,
+        codigo_sigef: null,
+
+        observacoes: null,
+
+        // IMÓVEL
+        area_hectares: parseFloat(newProject.area_hectares),
+        municipio_id: newProject.municipio_id,
+        ccir: newProject.property_ccir,
+        matricula_principal: newProject.property_matricula,
+
+        // PROPRIETÁRIO
+        proprietario_nome: newProject.owner_name,
+        proprietario_cpf: newProject.owner_cpf,
+        proprietario_cnpj: null,
+        proprietario_tipo: "FISICA",
+      }),
+    });
+
+    if (response.ok) {
+      alert("Projeto criado com sucesso!");
+
+      setNewProject({
+        name: "",
+        description: "",
+        tipo_processo: "",
+        area_hectares: "",
+        municipio_id: null,
+        municipio: "",
+        uf: "",
+        owner_name: "",
+        owner_cpf: "",
+        property_ccir: "",
+        property_matricula: "",
+      });
+
+      fetchProjects();
+    } else {
+      const err = await response.json();
+      console.error("Erro backend:", err);
+      alert("Erro ao criar projeto.");
     }
-  };
+  } catch (error) {
+    console.error("Error creating project:", error);
+  }
+};
+
 
   // ================================
   // METRICS
@@ -492,31 +530,35 @@ const response = await fetch("/api/projects/", {
     }}
   />
 
-  {/* LISTA DE SUGESTÕES */}
-  {municipioSearch.length >= 2 && municipios.length > 0 && (
-    <div className="mt-2 border rounded-lg bg-white shadow max-h-48 overflow-y-auto">
-      {municipios.map((m) => (
-        <div
-          key={m.id}
-          className="px-3 py-2 cursor-pointer hover:bg-green-50"
-          onClick={() => {
-            const label = `${m.nome} - ${m.estado}`;
+{/* LISTA DE SUGESTÕES */}
+{municipioSearch.length >= 2 && municipios.length > 0 && (
+  <div className="mt-2 border rounded-lg bg-white shadow max-h-48 overflow-y-auto">
+    {municipios.map((m) => (
+      <div
+        key={m.id}
+        className="px-3 py-2 cursor-pointer hover:bg-green-50"
+        onClick={() => {
+          const label = `${m.nome} - ${m.estado}`;
 
-            setMunicipioSearch(label);
-            setNewProject({
-              ...newProject,
-              municipio: label,
-            });
+          setMunicipioSearch(label);
 
-            setMunicipios([]); // 🔒 fecha a lista após seleção
-          }}
-        >
-          {m.nome} — {m.estado}
-        </div>
-      ))}
-    </div>
-  )}
+          setNewProject({
+            ...newProject,
+            municipio: label,
+            municipio_id: m.id,   // 🔥 OBRIGATÓRIO PARA O BACKEND
+            uf: m.estado,         // 🔥 NECESSÁRIO PARA PROJECT
+          });
+
+          setMunicipios([]); // 🔒 fecha a lista após seleção
+        }}
+      >
+        {m.nome} — {m.estado}
+      </div>
+    ))}
+  </div>
+)}
 </div>
+
 
 
                     <Button
@@ -691,12 +733,21 @@ const response = await fetch("/api/projects/", {
             </TabsTrigger>
 
             <TabsTrigger
-              value="timeline"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              Cronograma
-            </TabsTrigger>
+            value="timeline"
+           className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
+          >
+          <Clock className="w-4 h-4 mr-2" />
+           Cronograma
+          </TabsTrigger>
+
+          <TabsTrigger
+          value="requerimentos"
+          className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+          >
+          <FileCheck className="w-4 h-4 mr-2" />
+          Requerimentos
+          </TabsTrigger>
+
 
             <TabsTrigger
               value="proposals"
@@ -789,6 +840,11 @@ const response = await fetch("/api/projects/", {
             <AutomacaoTab />
           </TabsContent>
 
+          <TabsContent value="requerimentos">
+           <RequerimentosTab selectedProject={selectedProject} />
+         </TabsContent>
+
+
           {/* BUDGET */}
           <TabsContent value="budget">
             <BudgetWizard projectId={selectedProject?.id} />
@@ -852,11 +908,12 @@ const response = await fetch("/api/projects/", {
                           </p>
                         </div>
 
-                        <div className="flex gap-3">
-  {p.pdf_path && (
+<div className="flex gap-3">
+  {p.pdf_url && (
     <a
-      href={p.pdf_path}
+      href={p.pdf_url}
       target="_blank"
+      rel="noopener noreferrer"
       className="bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1"
     >
       <FileDown className="w-4 h-4" />
@@ -864,10 +921,11 @@ const response = await fetch("/api/projects/", {
     </a>
   )}
 
-  {p.contract_pdf_path && (
+  {p.contract_url && (
     <a
-      href={p.contract_pdf_path}
+      href={p.contract_url}
       target="_blank"
+      rel="noopener noreferrer"
       className="bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-1"
     >
       <FileDown className="w-4 h-4" />
@@ -875,6 +933,7 @@ const response = await fetch("/api/projects/", {
     </a>
   )}
 </div>
+
 
                       </div>
                     ))}
