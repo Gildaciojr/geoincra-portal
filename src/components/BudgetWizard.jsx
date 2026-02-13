@@ -148,7 +148,7 @@ const validateStep = () => {
 
     // ✅ AJUSTE 3 — bloqueio real
     if (!projectId) {
-      setErrors({ submit: "Selecione um projeto antes de gerar a proposta." });
+      setErrors({ submit: "Selecione um projeto antes de gerar o orçamento." });
       return;
     }
 
@@ -184,20 +184,17 @@ const payload = {
 };
 
 
-      // ✅ ENDPOINT CORRETO + JWT
-      const resp = await fetch(
-      `/api/propostas/generate/${projectId}`,
-      {
-         method: "POST",
-         headers: {
-         "Content-Type": "application/json",
-         Authorization: `Bearer ${token}`,
+  const resp = await fetch(
+  "/api/orcamentos/preview",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   }
 );
-
-
 
 
 const data = await resp.json().catch(() => ({}));
@@ -205,7 +202,7 @@ const data = await resp.json().catch(() => ({}));
 if (!resp.ok) {
   const errorMessage = Array.isArray(data.detail)
     ? data.detail[0]?.msg
-    : data.detail || data.mensagem || "Erro ao gerar proposta";
+    : data.detail || data.mensagem || "Erro ao gerar orçamento";
 
   throw new Error(errorMessage);
 }
@@ -596,7 +593,7 @@ if (!resp.ok) {
       {!projectId && (
         <Card className="border-red-300 border-2 p-6">
           <p className="text-red-700 font-semibold text-center">
-            ⚠ Selecione um projeto antes de gerar uma proposta.
+            ⚠ Selecione um projeto antes de gerar um orçamento.
           </p>
         </Card>
       )}
@@ -605,7 +602,7 @@ if (!resp.ok) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-teal-700">
             <Calculator className="w-5 h-5" />
-            Motor de Cálculo e Proposta
+            Motor de Cálculo de Orçamento
           </CardTitle>
           <CardDescription>Wizard de múltiplos passos</CardDescription>
         </CardHeader>
@@ -650,7 +647,7 @@ if (!resp.ok) {
                 ) : (
                   <>
                     <FileDown className="w-4 h-4 mr-2" />
-                    Gerar Proposta e Contrato
+                    Gerar Orçamento
                   </>
                 )}
               </Button>
@@ -662,7 +659,7 @@ if (!resp.ok) {
 {result && (
   <Card className="border-green-300 border-2 p-6">
     <h2 className="text-xl font-semibold text-green-700 mb-4">
-      Proposta Gerada com Sucesso
+      Orçamento Gerado com Sucesso
     </h2>
 
     <div className="grid md:grid-cols-3 gap-4">
@@ -688,31 +685,15 @@ if (!resp.ok) {
       </div>
     </div>
 
-    <div className="flex gap-4 mt-4">
-      {result.pdf_path && (
-        <a
-          href={result.pdf_path}
-          target="_blank"
-          className="px-4 py-2 bg-green-600 text-white rounded"
-        >
-          Baixar Proposta PDF
-        </a>
-      )}
-
-      {result.contract_pdf_path && (
-        <a
-          href={result.contract_pdf_path}
-          target="_blank"
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Baixar Contrato PDF
-        </a>
-      )}
-    </div>
+    {/* OPÇÃO A — Orçamento apenas visual (sem PDF) */}
+    <p className="mt-4 text-sm text-gray-500">
+      Este orçamento é apenas uma estimativa e não constitui contrato.
+    </p>
   </Card>
 )}
 
   </div>
-  );
+);
 }
+
 
