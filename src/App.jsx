@@ -11,7 +11,7 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,+
+  TabsTrigger,
 } from "@/components/ui/tabs.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { Input } from "@/components/ui/input.jsx";
