@@ -652,38 +652,41 @@ const handleSubmit = async () => {
       Orçamento Gerado com Sucesso
     </h2>
 
+    {/* GRID DOS VALORES */}
     <div className="grid md:grid-cols-3 gap-4">
       <div className="p-3 bg-green-50 border border-green-200 rounded">
         <p className="text-gray-600">Valor Base</p>
         <p className="text-xl text-green-700 font-bold">
-          R$ {result.valor_base?.toFixed(2)}
+          R$ {Number(result.valor_base).toFixed(2)}
         </p>
       </div>
 
       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded">
         <p className="text-gray-600">Extras</p>
         <p className="font-semibold">
-          R$ {result.extras?.toFixed(2)}
+          R$ {(
+            (result.valor_variaveis_percentuais || 0) +
+            (result.valor_variaveis_fixas || 0) +
+            (result.valor_art || 0) +
+            (result.valor_cartorio || 0)
+          ).toFixed(2)}
         </p>
       </div>
 
       <div className="p-3 bg-teal-50 border border-teal-200 rounded">
         <p className="text-gray-600">Total</p>
         <p className="text-2xl text-teal-700 font-extrabold">
-          R$ {result.total?.toFixed(2)}
+          R$ {Number(result.total_final).toFixed(2)}
         </p>
       </div>
     </div>
 
-    {/* OPÇÃO A — Orçamento apenas visual (sem PDF) */}
+    {/* AVISO */}
     <p className="mt-4 text-sm text-gray-500">
       Este orçamento é apenas uma estimativa e não constitui contrato.
-    </p>
-  </Card>
-)}
-
-  </div>
-);
+          </p>
+        </Card>
+      )}
+    </div>
+  );
 }
-
-

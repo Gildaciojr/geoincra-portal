@@ -839,8 +839,9 @@ const handleCreateProject = async (e) => {
 
           {/* AUTOMATION */}
           <TabsContent value="automation">
-            <AutomacaoTab />
+          <AutomacaoTab selectedProject={selectedProject} />
           </TabsContent>
+
 
           <TabsContent value="requerimentos">
            <RequerimentosTab selectedProject={selectedProject} />
