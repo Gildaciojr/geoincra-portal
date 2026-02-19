@@ -185,7 +185,7 @@ const payload = {
 
 
   const resp = await fetch(
-  "/api/orcamentos/preview",
+  "/api/calculos/preview",
   {
     method: "POST",
     headers: {
