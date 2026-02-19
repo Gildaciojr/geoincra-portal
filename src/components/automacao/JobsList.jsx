@@ -17,7 +17,7 @@ import { Download, RefreshCw } from "lucide-react";
 /**
  * JobsList
  * - Lista jobs do usuário
- * - Filtra por projeto (quando existir)
+ * - EXIGE projeto válido (id)
  * - Atualiza automaticamente jobs em PROCESSING
  */
 export function JobsList({ selectedProject }) {
@@ -27,29 +27,33 @@ export function JobsList({ selectedProject }) {
   const [loading, setLoading] = useState(false);
 
   const loadJobs = async () => {
-    if (!token) return;
+    if (!token || !selectedProject?.id) {
+      setJobs([]);
+      return;
+    }
 
     setLoading(true);
     try {
       const data = await listarJobs(token);
 
-      // 🔒 FILTRA POR PROJETO, SE EXISTIR
-      const filtered = selectedProject
-        ? data.filter((j) => j.project_id === selectedProject.id)
-        : data;
+      // 🔒 FILTRAGEM SEGURA POR PROJETO
+      const filtered = data.filter(
+        (j) => j.project_id === selectedProject.id
+      );
 
       setJobs(filtered);
     } catch (err) {
       console.error("Erro ao carregar jobs:", err);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔁 CARGA INICIAL
+  // 🔁 CARGA INICIAL / TROCA DE PROJETO
   useEffect(() => {
     loadJobs();
-  }, [selectedProject]);
+  }, [selectedProject?.id]);
 
   // 🔄 POLLING AUTOMÁTICO PARA JOBS EM PROCESSAMENTO
   useEffect(() => {
@@ -61,7 +65,7 @@ export function JobsList({ selectedProject }) {
 
     const interval = setInterval(() => {
       loadJobs();
-    }, 5000); // 5s — seguro e profissional
+    }, 5000); // 5s — produção segura
 
     return () => clearInterval(interval);
   }, [jobs]);
@@ -75,19 +79,30 @@ export function JobsList({ selectedProject }) {
           variant="outline"
           size="sm"
           onClick={loadJobs}
-          disabled={loading}
+          disabled={loading || !selectedProject?.id}
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+          />
         </Button>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {jobs.length === 0 && (
+        {/* SEM PROJETO */}
+        {!selectedProject?.id && (
+          <p className="text-sm text-gray-500">
+            Selecione um projeto para visualizar as automações.
+          </p>
+        )}
+
+        {/* COM PROJETO, SEM JOBS */}
+        {selectedProject?.id && jobs.length === 0 && !loading && (
           <p className="text-sm text-gray-500">
             Nenhuma automação encontrada para este projeto.
           </p>
         )}
 
+        {/* LISTAGEM */}
         {jobs.map((job) => (
           <div
             key={job.id}

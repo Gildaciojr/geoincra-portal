@@ -12,21 +12,32 @@ export function RiDigitalCard({ selectedProject, onCreated }) {
   const [dataFim, setDataFim] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const executar = async () => {
-    setLoading(true);
-    try {
-      await criarJobRiDigital(token, {
-        data_inicio: dataInicio,
-        data_fim: dataFim,
-        project_id: selectedProject?.id ?? "",
-      });
-      if (onCreated) onCreated();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+const executar = async () => {
+  if (!selectedProject?.id) {
+    alert("Selecione um projeto válido antes de executar a automação.");
+    return;
+  }
+
+  if (!dataInicio || !dataFim) {
+    alert("Informe data início e data fim.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    await criarJobRiDigital(token, {
+      project_id: selectedProject.id, // 🔒 NUNCA string vazia
+      data_inicio: dataInicio,
+      data_fim: dataFim,
+    });
+    if (onCreated) onCreated();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Card>

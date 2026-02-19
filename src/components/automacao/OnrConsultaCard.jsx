@@ -12,27 +12,33 @@ export function OnrConsultaCard({ selectedProject, onCreated }) {
   const [valor, setValor] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const executar = async () => {
-    if (!selectedProject) {
-      alert("Selecione um projeto.");
-      return;
-    }
+const executar = async () => {
+  if (!selectedProject?.id) {
+    alert("Selecione um projeto válido antes de executar a automação.");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      await criarJobOnr(token, {
-        project_id: selectedProject.id,
-        modo,
-        valor,
-      });
-      setValor("");
-      if (onCreated) onCreated();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!valor.trim()) {
+    alert("Informe um valor para consulta.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    await criarJobOnr(token, {
+      project_id: selectedProject.id,
+      modo,
+      valor: valor.trim(),
+    });
+    setValor("");
+    if (onCreated) onCreated();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Card>
