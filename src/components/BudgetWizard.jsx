@@ -143,80 +143,70 @@ const validateStep = () => {
   const prevStep = () =>
     setCurrentStep((s) => Math.max(s - 1, 1));
 
-  const handleSubmit = async () => {
-    if (!validateStep()) return;
+const handleSubmit = async () => {
+  if (!validateStep()) return;
 
-    // ✅ AJUSTE 3 — bloqueio real
-    if (!projectId) {
-      setErrors({ submit: "Selecione um projeto antes de gerar o orçamento." });
-      return;
+  if (!projectId) {
+    setErrors({ submit: "Selecione um projeto antes de gerar o orçamento." });
+    return;
+  }
+
+  setLoading(true);
+  setResult(null);
+
+  try {
+    const payload = {
+      cliente: form.cliente,
+      municipio: form.municipio,
+      descricao_imovel: form.descricao_imovel,
+      area_hectares: Number(form.area_ha),
+
+      confrontacao_rios: form.confrontacao_rios,
+      proprietario_acompanha: form.proprietario_acompanha,
+      mata_mais_50: form.mais_50_mata,
+
+      finalidade: form.finalidade,
+      partes:
+        form.finalidade === "desmembramento"
+          ? Number(form.qtd_partes || 0)
+          : null,
+
+      ccir_atualizado: form.ccir_atualizado,
+      itr_atualizado: form.itr_atualizado,
+      certificado_digital: form.certificado_digital,
+
+      estaqueamento_km: Number(form.estaqueamento_km || 0),
+      notificacao_confrontantes: Number(form.notificacao_confrontantes || 0),
+    };
+
+    const resp = await fetch("/api/calculos/preview", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.detail || "Erro ao gerar orçamento");
     }
 
-    setLoading(true);
-    setResult(null);
+    setResult(data);
 
-    try {
-const payload = {
-  cliente: form.cliente,
-  municipio: form.municipio,
-  descricao_imovel: form.descricao_imovel,
-
-  // 🔒 CAMPO CRÍTICO
-  area_hectares: Number(form.area_ha),
-
-  // 🔁 NOMES EXATOS DO BACKEND
-  confrontacao_rios: form.confrontacao_rios,
-  proprietario_acompanha: form.proprietario_acompanha,
-  mata_mais_50: form.mais_50_mata,
-
-  finalidade: form.finalidade,
-  partes:
-    form.finalidade === "desmembramento"
-      ? Number(form.qtd_partes || 0)
-      : null,
-
-  ccir_atualizado: form.ccir_atualizado,
-  itr_atualizado: form.itr_atualizado,
-  certificado_digital: form.certificado_digital,
-
-  estaqueamento_km: Number(form.estaqueamento_km || 0),
-  notificacao_confrontantes: Number(form.notificacao_confrontantes || 0),
+    // 🔥 ENTREGA O PAYLOAD BASE PARA PROPOSTAS
+    if (onGenerated) {
+      onGenerated(payload);
+    }
+  } catch (err) {
+    setErrors({ submit: err.message });
+  } finally {
+    setLoading(false);
+  }
 };
 
-
-  const resp = await fetch(
-  "/api/calculos/preview",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  }
-);
-
-
-const data = await resp.json().catch(() => ({}));
-
-if (!resp.ok) {
-  const errorMessage = Array.isArray(data.detail)
-    ? data.detail[0]?.msg
-    : data.detail || data.mensagem || "Erro ao gerar orçamento";
-
-  throw new Error(errorMessage);
-}
-
-
-
-      setResult(data);
-      if (onGenerated) onGenerated();
-    } catch (err) {
-      setErrors({ submit: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ===============================
   // UI INDICADOR DE PASSO

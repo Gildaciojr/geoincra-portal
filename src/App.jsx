@@ -23,6 +23,7 @@ import { ProcessosTab } from "./components/ProcessosTab.jsx";
 import { AutomacaoTab } from "./components/AutomacaoTab.jsx";
 import { CronogramaTab } from "./components/CronogramaTab.jsx";
 import { BudgetWizard } from "./components/BudgetWizard.jsx";
+import { ProposalWizard } from "./components/ProposalWizard.jsx";
 import { GeorreferenciamentoSection } from "./components/GeorreferenciamentoSection.jsx";
 import { AuthModal } from "./components/AuthModal.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
@@ -58,6 +59,7 @@ function App() {
   const [timeline, setTimeline] = useState([]);
   const [proposals, setProposals] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [lastBudgetPayload, setLastBudgetPayload] = useState(null);
 
  const { token: _token, user: _user, isAuthenticated, logout: _logout } = useAuth();
  const handleLogout = () => {
@@ -845,103 +847,114 @@ const handleCreateProject = async (e) => {
          </TabsContent>
 
 
-          {/* BUDGET */}
-          <TabsContent value="budget">
-            <BudgetWizard projectId={selectedProject?.id} />
-          </TabsContent>
+{/* BUDGET */}
+<TabsContent value="budget">
+  <BudgetWizard
+    projectId={selectedProject?.id}
+    onGenerated={(payloadBase) => {
+      // guarda o payload base do orçamento para a proposta
+      setLastBudgetPayload(payloadBase);
+    }}
+  />
+</TabsContent>
 
-          {/* TIMELINE */}
-          <TabsContent value="timeline">
-            <CronogramaTab
-              selectedProject={selectedProject}
-              timeline={timeline}
-              onRefresh={fetchTimeline}
-            />
-          </TabsContent>
+{/* TIMELINE */}
+<TabsContent value="timeline">
+  <CronogramaTab
+    selectedProject={selectedProject}
+    timeline={timeline}
+    onRefresh={fetchTimeline}
+  />
+</TabsContent>
 
-          {/* PROPOSALS */}
-          <TabsContent value="proposals" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-cyan-700 flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Geração de Propostas e Contratos
-                </CardTitle>
-                <CardDescription>
-                  Utilize o motor oficial do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BudgetWizard
-                  projectId={selectedProject?.id}
-                  onGenerated={fetchProposals}
-                />
-              </CardContent>
-            </Card>
+{/* PROPOSALS */}
+<TabsContent value="proposals" className="space-y-6">
 
-            {/* HISTÓRICO */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Propostas</CardTitle>
-                <CardDescription>
-                  Propostas geradas para este projeto
-                </CardDescription>
-              </CardHeader>
+  {/* GERAÇÃO DE PROPOSTA */}
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-cyan-700 flex items-center gap-2">
+        <FileText className="w-5 h-5" />
+        Geração de Propostas e Contratos
+      </CardTitle>
+      <CardDescription>
+        Utilize o motor oficial do sistema
+      </CardDescription>
+    </CardHeader>
 
-              <CardContent>
-                {proposals.length === 0 ? (
-                  <p className="text-gray-600">
-                    Nenhuma proposta gerada ainda.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {proposals.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center"
-                      >
-                        <div>
-                          <p className="font-semibold">{p.cliente}</p>
-                          <p className="text-sm text-gray-500">
-                            Total R$ {p.total.toFixed(2)} —{" "}
-                            {new Date(p.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+    <CardContent>
+      <ProposalWizard
+        projectId={selectedProject?.id}
+        payloadBase={lastBudgetPayload}
+        onGenerated={fetchProposals}
+      />
+    </CardContent>
+  </Card>
 
-<div className="flex gap-3">
-  {p.pdf_url && (
-    <a
-      href={p.pdf_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1"
-    >
-      <FileDown className="w-4 h-4" />
-      Proposta
-    </a>
-  )}
+  {/* HISTÓRICO */}
+  <Card>
+    <CardHeader>
+      <CardTitle>Histórico de Propostas</CardTitle>
+      <CardDescription>
+        Propostas geradas para este projeto
+      </CardDescription>
+    </CardHeader>
 
-  {p.contract_url && (
-    <a
-      href={p.contract_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-1"
-    >
-      <FileDown className="w-4 h-4" />
-      Contrato
-    </a>
-  )}
-</div>
+    <CardContent>
+      {proposals.length === 0 ? (
+        <p className="text-gray-600">
+          Nenhuma proposta gerada ainda.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {proposals.map((p) => (
+            <div
+              key={p.id}
+              className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center"
+            >
+              <div>
+                <p className="font-semibold">
+                  Proposta #{p.id}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Total R$ {Number(p.total).toFixed(2)} —{" "}
+                  {new Date(p.created_at).toLocaleDateString()}
+                </p>
+              </div>
 
-
-                      </div>
-                    ))}
-                  </div>
+              <div className="flex gap-3">
+                {p.pdf_url && (
+                  <a
+                    href={p.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Proposta
+                  </a>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+
+                {p.contract_url && (
+                  <a
+                    href={p.contract_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-1"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Contrato
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+
+</TabsContent>
         </Tabs>
       </main>
     </div>
@@ -949,3 +962,4 @@ const handleCreateProject = async (e) => {
 }
 
 export default App;
+
