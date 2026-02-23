@@ -20,7 +20,7 @@ import { Download, RefreshCw } from "lucide-react";
  * - EXIGE projeto válido (id)
  * - Atualiza automaticamente jobs em PROCESSING
  */
-export function JobsList({ selectedProject }) {
+  export function JobsList({ selectedProject, onFinished }) {
   const { token } = useAuth();
 
   const [jobs, setJobs] = useState([]);
@@ -42,6 +42,13 @@ export function JobsList({ selectedProject }) {
       );
 
       setJobs(filtered);
+            const stillRunning = filtered.some(
+        (j) => j.status === "PENDING" || j.status === "PROCESSING"
+      );
+
+      if (!stillRunning && onFinished) {
+        onFinished();
+      }
     } catch (err) {
       console.error("Erro ao carregar jobs:", err);
       setJobs([]);
@@ -146,6 +153,18 @@ export function JobsList({ selectedProject }) {
                           Matrícula: <strong>{r.matricula}</strong>
                         </span>
                       )}
+                      {r.metadata_json?.pdf_status === "NAO_DISPONIVEL" && (
+                    <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
+                   PDF não disponível no RI Digital (prazo expirado)
+                   </div>
+                    )}
+                    
+                    {r.metadata_json?.fonte === "ONR_SIGRI" &&
+                  r.metadata_json?.download_disponivel === false && (
+                 <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
+                 Polígono não disponível no ONR/SIG-RI
+                </div>
+               )}
                     </div>
 
                     <a

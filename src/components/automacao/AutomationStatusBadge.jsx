@@ -2,32 +2,20 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 export function AutomationStatusBadge({ status }) {
-  switch (status) {
-    case "PENDING":
-      return (
-        <Badge variant="outline" className="text-gray-600 border-gray-300">
-          <Clock className="w-3 h-3" /> Pendente
-        </Badge>
-      );
-    case "PROCESSING":
-      return (
-        <Badge className="bg-yellow-500 text-white">
-          <Loader2 className="w-3 h-3 animate-spin" /> Processando
-        </Badge>
-      );
-    case "COMPLETED":
-      return (
-        <Badge className="bg-green-600 text-white">
-          <CheckCircle2 className="w-3 h-3" /> Concluído
-        </Badge>
-      );
-    case "FAILED":
-      return (
-        <Badge variant="destructive">
-          <XCircle className="w-3 h-3" /> Erro
-        </Badge>
-      );
-    default:
-      return null;
-  }
+  const map = {
+    PENDING: { label: "Pendente", color: "bg-gray-200 text-gray-800" },
+    PROCESSING: { label: "Processando", color: "bg-blue-100 text-blue-800" },
+    COMPLETED: { label: "Concluído", color: "bg-green-100 text-green-800" },
+    FAILED: { label: "Erro", color: "bg-red-100 text-red-800" },
+  };
+
+  const cfg = map[status] || map.PENDING;
+
+  return (
+    <span
+      className={`text-xs px-2 py-1 rounded font-semibold ${cfg.color}`}
+    >
+      {cfg.label}
+    </span>
+  );
 }
