@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext.jsx";
 
-import { listarJobs, downloadResultadoUrl } from "@/services/automacoes";
+import { listarJobs } from "@/services/automacoes";
 
 import {
   Card,
@@ -17,10 +17,11 @@ import { Download, RefreshCw } from "lucide-react";
 /**
  * JobsList
  * - Lista jobs do usuário
- * - EXIGE projeto válido (id)
- * - Atualiza automaticamente jobs em PROCESSING
+ * - Exige projeto válido
+ * - Polling automático
+ * - Download autenticado (SaaS correto)
  */
-  export function JobsList({ selectedProject, onFinished }) {
+export function JobsList({ selectedProject, onFinished }) {
   const { token } = useAuth();
 
   const [jobs, setJobs] = useState([]);
@@ -36,13 +37,13 @@ import { Download, RefreshCw } from "lucide-react";
     try {
       const data = await listarJobs(token);
 
-      // 🔒 FILTRAGEM SEGURA POR PROJETO
       const filtered = data.filter(
         (j) => j.project_id === selectedProject.id
       );
 
       setJobs(filtered);
-            const stillRunning = filtered.some(
+
+      const stillRunning = filtered.some(
         (j) => j.status === "PENDING" || j.status === "PROCESSING"
       );
 
@@ -57,12 +58,10 @@ import { Download, RefreshCw } from "lucide-react";
     }
   };
 
-  // 🔁 CARGA INICIAL / TROCA DE PROJETO
   useEffect(() => {
     loadJobs();
   }, [selectedProject?.id]);
 
-  // 🔄 POLLING AUTOMÁTICO PARA JOBS EM PROCESSAMENTO
   useEffect(() => {
     const hasProcessing = jobs.some(
       (j) => j.status === "PENDING" || j.status === "PROCESSING"
@@ -70,12 +69,42 @@ import { Download, RefreshCw } from "lucide-react";
 
     if (!hasProcessing) return;
 
-    const interval = setInterval(() => {
-      loadJobs();
-    }, 5000); // 5s — produção segura
-
+    const interval = setInterval(loadJobs, 5000);
     return () => clearInterval(interval);
   }, [jobs]);
+
+  // 🔐 DOWNLOAD AUTENTICADO (SEM <a href>)
+  const handleDownload = async (resultId) => {
+    try {
+      const res = await fetch(
+        `/api/automacoes/results/${resultId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.detail || "Erro ao baixar arquivo");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resultado.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 
   return (
     <Card>
@@ -95,21 +124,18 @@ import { Download, RefreshCw } from "lucide-react";
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* SEM PROJETO */}
         {!selectedProject?.id && (
           <p className="text-sm text-gray-500">
             Selecione um projeto para visualizar as automações.
           </p>
         )}
 
-        {/* COM PROJETO, SEM JOBS */}
         {selectedProject?.id && jobs.length === 0 && !loading && (
           <p className="text-sm text-gray-500">
             Nenhuma automação encontrada para este projeto.
           </p>
         )}
 
-        {/* LISTAGEM */}
         {jobs.map((job) => (
           <div
             key={job.id}
@@ -135,7 +161,7 @@ import { Download, RefreshCw } from "lucide-react";
             </div>
 
             {/* RESULTADOS */}
-            {job.resultados && job.resultados.length > 0 && (
+            {job.resultados?.length > 0 && (
               <div className="space-y-2">
                 {job.resultados.map((r) => (
                   <div
@@ -153,35 +179,40 @@ import { Download, RefreshCw } from "lucide-react";
                           Matrícula: <strong>{r.matricula}</strong>
                         </span>
                       )}
+
                       {r.metadata_json?.pdf_status === "NAO_DISPONIVEL" && (
-                    <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
-                   PDF não disponível no RI Digital (prazo expirado)
-                   </div>
-                    )}
-                    
-                    {r.metadata_json?.fonte === "ONR_SIGRI" &&
-                  r.metadata_json?.download_disponivel === false && (
-                 <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
-                 Polígono não disponível no ONR/SIG-RI
-                </div>
-               )}
+                        <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
+                          PDF não disponível no RI Digital (prazo expirado)
+                        </div>
+                      )}
+
+                      {r.metadata_json?.fonte === "ONR_SIGRI" &&
+                        r.metadata_json?.download_disponivel === false && (
+                          <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
+                            Polígono não disponível no ONR/SIG-RI
+                          </div>
+                        )}
                     </div>
 
-                    <a
-                      href={downloadResultadoUrl(r.id)}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="w-4 h-4" />
-                      Baixar
-                    </a>
+                    {r.file_path && r.metadata_json?.pdf_status === "OK" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownload(r.id)}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Baixar PDF
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        Arquivo não disponível
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {/* ERRO */}
             {job.status === "FAILED" && job.error_message && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
                 {job.error_message}

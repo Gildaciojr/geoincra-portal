@@ -14,7 +14,8 @@ export function AutomacaoTab({ selectedProject }) {
   return (
     <div className="space-y-6">
       {/* MODAL GLOBAL */}
-      <AutomationRunningModal open={running} />
+      <AutomationRunningModal open={running}
+      onOpenChange={setRunning} />
 
       {/* ONR / SIG-RI */}
       <OnrConsultaCard
