@@ -1,5 +1,9 @@
 // src/services/requerimentos.js
 
+// =======================================================
+// TEMPLATES (CATÁLOGO GLOBAL)
+// =======================================================
+
 export async function listTemplates(token, categoria) {
   const url = categoria
     ? `/api/templates/?categoria=${encodeURIComponent(categoria)}`
@@ -15,8 +19,23 @@ export async function listTemplates(token, categoria) {
   return await res.json();
 }
 
+export async function downloadTemplate(token, templateId) {
+  const res = await fetch(`/api/templates/${templateId}/download`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.detail || "Erro ao baixar template");
+  }
+
+  return await res.blob();
+}
+
 // =======================================================
-// REQUERIMENTOS — ROTAS CORRETAS (projects)
+// REQUERIMENTOS — VINCULADOS A PROJETO
 // =======================================================
 
 export async function listRequerimentosByProject(token, projectId) {
@@ -92,7 +111,7 @@ export async function generateRequerimentoDocx(
       tipo
     )}&template_id=${templateId}`,
     {
-      method: "POST", // 🔴 OBRIGATÓRIO
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -105,4 +124,60 @@ export async function generateRequerimentoDocx(
   }
 
   return await res.blob();
+}
+
+// =======================================================
+// REQUERIMENTOS — USUÁRIO (BIBLIOTECA LIVRE)
+// =======================================================
+
+export async function listUserRequerimentos(token) {
+  const res = await fetch(`/api/requerimentos`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) return [];
+  return await res.json();
+}
+
+export async function upsertUserRequerimento(token, payload) {
+  const res = await fetch(`/api/requerimentos`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.detail || "Erro ao salvar requerimento");
+  }
+
+  return data;
+}
+
+export async function attachRequerimentoToProject(
+  token,
+  requerimentoId,
+  projectId
+) {
+  const res = await fetch(
+    `/api/requerimentos/${requerimentoId}/attach/${projectId}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.detail || "Erro ao vincular requerimento");
+  }
+
+  return data;
 }
