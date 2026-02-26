@@ -12,14 +12,17 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 
 import { AutomationStatusBadge } from "./AutomationStatusBadge.jsx";
+import { OnrResultadoCard } from "./OnrResultadoCard.jsx";
+
 import { Download, RefreshCw } from "lucide-react";
 
 /**
  * JobsList
  * - Lista jobs do usuário
  * - Exige projeto válido
- * - Polling automático
- * - Download autenticado (SaaS correto)
+ * - Polling automático enquanto houver job rodando
+ * - Fecha modal automaticamente quando o job atual finaliza
+ * - Exibe resultados ONR / SIG-RI de forma profissional
  */
 export function JobsList({ selectedProject, onFinished }) {
   const { token } = useAuth();
@@ -37,18 +40,22 @@ export function JobsList({ selectedProject, onFinished }) {
     try {
       const data = await listarJobs(token);
 
+      // 🔒 filtra somente jobs do projeto atual
       const filtered = data.filter(
         (j) => j.project_id === selectedProject.id
       );
 
       setJobs(filtered);
 
-      const stillRunning = filtered.some(
-        (j) => j.status === "PENDING" || j.status === "PROCESSING"
-      );
+      // 🔥 FECHAMENTO AUTOMÁTICO DO MODAL
+      // considera sempre o job mais recente
+      const lastJob = filtered[0];
 
-      if (!stillRunning && onFinished) {
-        onFinished();
+      if (
+        lastJob &&
+        (lastJob.status === "COMPLETED" || lastJob.status === "FAILED")
+      ) {
+        onFinished?.();
       }
     } catch (err) {
       console.error("Erro ao carregar jobs:", err);
@@ -58,10 +65,12 @@ export function JobsList({ selectedProject, onFinished }) {
     }
   };
 
+  // carga inicial / troca de projeto
   useEffect(() => {
     loadJobs();
   }, [selectedProject?.id]);
 
+  // polling automático somente se houver job em execução
   useEffect(() => {
     const hasProcessing = jobs.some(
       (j) => j.status === "PENDING" || j.status === "PROCESSING"
@@ -73,7 +82,7 @@ export function JobsList({ selectedProject, onFinished }) {
     return () => clearInterval(interval);
   }, [jobs]);
 
-  // 🔐 DOWNLOAD AUTENTICADO (SEM <a href>)
+  // 🔐 DOWNLOAD AUTENTICADO
   const handleDownload = async (resultId) => {
     try {
       const res = await fetch(
@@ -95,7 +104,7 @@ export function JobsList({ selectedProject, onFinished }) {
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = "resultado.pdf";
+      a.download = "resultado";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -141,6 +150,7 @@ export function JobsList({ selectedProject, onFinished }) {
             key={job.id}
             className="border rounded-lg p-4 bg-gray-50 space-y-3"
           >
+            {/* CABEÇALHO DO JOB */}
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold text-sm">
@@ -162,46 +172,60 @@ export function JobsList({ selectedProject, onFinished }) {
 
             {/* RESULTADOS */}
             {job.resultados?.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {job.resultados.map((r) => (
                   <div
                     key={r.id}
-                    className="flex items-center justify-between bg-white border rounded p-2"
+                    className="bg-white border rounded-lg p-3 space-y-2"
                   >
+                    {/* INFO BÁSICA */}
                     <div className="text-sm text-gray-700">
                       {r.protocolo && (
-                        <span className="mr-2">
-                          Protocolo: <strong>{r.protocolo}</strong>
-                        </span>
-                      )}
-                      {r.matricula && (
-                        <span>
-                          Matrícula: <strong>{r.matricula}</strong>
-                        </span>
-                      )}
-
-                      {r.metadata_json?.pdf_status === "NAO_DISPONIVEL" && (
-                        <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
-                          PDF não disponível no RI Digital (prazo expirado)
+                        <div>
+                          Protocolo:{" "}
+                          <strong>{r.protocolo}</strong>
                         </div>
                       )}
 
-                      {r.metadata_json?.fonte === "ONR_SIGRI" &&
-                        r.metadata_json?.download_disponivel === false && (
-                          <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-1 mt-1">
-                            Polígono não disponível no ONR/SIG-RI
-                          </div>
-                        )}
+                      {r.matricula && (
+                        <div>
+                          Matrícula:{" "}
+                          <strong>{r.matricula}</strong>
+                        </div>
+                      )}
                     </div>
 
-                    {r.file_path && r.metadata_json?.pdf_status === "OK" ? (
+                    {/* ALERTAS */}
+                    {r.metadata_json?.pdf_status === "NAO_DISPONIVEL" && (
+                      <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
+                        PDF não disponível no RI Digital (prazo expirado)
+                      </div>
+                    )}
+
+                    {r.metadata_json?.fonte === "ONR_SIGRI" &&
+                      r.metadata_json?.download_disponivel === false && (
+                        <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
+                          Polígono não disponível no ONR / SIG-RI
+                        </div>
+                      )}
+
+                    {/* 🔥 DADOS DO IMÓVEL — ONR */}
+                    {r.metadata_json?.fonte === "ONR_SIGRI" && (
+                      <OnrResultadoCard
+                        imovel={r.metadata_json.imovel}
+                      />
+                    )}
+
+                    {/* DOWNLOAD */}
+                    {r.file_path &&
+                    r.metadata_json?.pdf_status === "OK" ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleDownload(r.id)}
                       >
                         <Download className="w-4 h-4 mr-1" />
-                        Baixar PDF
+                        Baixar arquivo
                       </Button>
                     ) : (
                       <span className="text-xs text-gray-400 italic">
@@ -213,6 +237,7 @@ export function JobsList({ selectedProject, onFinished }) {
               </div>
             )}
 
+            {/* ERRO DO JOB */}
             {job.status === "FAILED" && job.error_message && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
                 {job.error_message}
