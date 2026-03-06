@@ -701,7 +701,7 @@ const handleCreateProject = async (e) => {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-6 bg-white shadow-md">
+          <TabsList className="grid w-full grid-cols-7 bg-white shadow-md">
             <TabsTrigger
               value="overview"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white"

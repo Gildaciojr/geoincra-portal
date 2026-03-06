@@ -25,6 +25,15 @@ export function UploadDocumento({ projectId, onUploaded }) {
   const [docType, setDocType] = useState("matricula");
   const [loading, setLoading] = useState(false);
 
+  const handleFileChange = (e) => {
+    const selected =
+      e.target.files && e.target.files.length > 0
+        ? e.target.files[0]
+        : null;
+
+    setFile(selected);
+  };
+
   const upload = async () => {
     if (!projectId) {
       alert("Selecione um projeto antes de enviar documentos.");
@@ -61,13 +70,14 @@ export function UploadDocumento({ projectId, onUploaded }) {
 
       alert("Documento enviado com sucesso!");
 
-      // 🔄 reset
       setFile(null);
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
 
       if (onUploaded) onUploaded(data);
+
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -77,13 +87,15 @@ export function UploadDocumento({ projectId, onUploaded }) {
   };
 
   return (
-    <div className="border p-4 rounded-lg bg-white shadow space-y-3">
+    <div className="border p-4 rounded-lg bg-white shadow space-y-4">
+
       <h3 className="font-semibold text-emerald-800">
         Enviar Documento
       </h3>
 
       <div>
         <Label>Tipo de Documento</Label>
+
         <select
           value={docType}
           onChange={(e) => setDocType(e.target.value)}
@@ -97,24 +109,43 @@ export function UploadDocumento({ projectId, onUploaded }) {
         </select>
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label>Arquivo</Label>
+
+        <div className="flex items-center gap-3">
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Escolher arquivo
+          </Button>
+
+          <span className="text-sm text-gray-500 truncate max-w-[220px]">
+            {file ? file.name : "Nenhum arquivo selecionado"}
+          </span>
+
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="mt-1"
+          onChange={handleFileChange}
+          className="hidden"
         />
       </div>
 
       <Button
+        type="button"
         onClick={upload}
         disabled={loading}
         className="w-full bg-emerald-600 hover:bg-emerald-700"
       >
         {loading ? "Enviando..." : "Enviar Documento"}
       </Button>
+
     </div>
   );
 }

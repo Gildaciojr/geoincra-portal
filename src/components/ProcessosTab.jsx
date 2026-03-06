@@ -132,7 +132,7 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
                 Nenhum documento foi enviado ainda.
               </div>
             ) : (
-              <ScrollArea className="max-h-[420px] rounded-md border border-sky-100 bg-white">
+              <div className="max-h-[420px] overflow-y-auto rounded-md border border-sky-100 bg-white">
                 <div className="divide-y">
                   {documents.map((doc) => (
                     <div
@@ -200,7 +200,7 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </CardContent>
         </Card>
