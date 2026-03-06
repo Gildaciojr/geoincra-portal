@@ -177,6 +177,7 @@ export async function attachRequerimentoToProject(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data?.detail || "Erro ao vincular requerimento");
+    
   }
 
   return data;

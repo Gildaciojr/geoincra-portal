@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { UploadDocumento } from "./UploadDocumento.jsx";
+import { OcrCard } from "@/components/automacao/OcrCard.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 
 import {
@@ -20,6 +21,7 @@ import {
   RefreshCw,
   ClipboardList,
   AlertCircle,
+  FileSearch,
 } from "lucide-react";
 
 import {
@@ -29,6 +31,9 @@ import {
 
 export function ProcessosTab({ selectedProject, documents, onRefresh }) {
   const { token } = useAuth();
+
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrDocument, setOcrDocument] = useState(null);
 
   const hasDocuments = useMemo(
     () => Array.isArray(documents) && documents.length > 0,
@@ -54,6 +59,11 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const handleOpenOcr = (doc) => {
+    setOcrDocument(doc);
+    setOcrOpen(true);
   };
 
   /*
@@ -85,122 +95,141 @@ export function ProcessosTab({ selectedProject, documents, onRefresh }) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-6">
-      {/* DOCUMENTOS */}
-      <Card className="border-2 border-sky-200">
-        <CardHeader className="flex flex-row items-center justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-sky-800">
-              <ClipboardList className="w-5 h-5" />
-              Documentos do Projeto
-            </CardTitle>
-            <CardDescription>
-              Todos os documentos enviados e vinculados ao projeto.
-            </CardDescription>
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            <Badge variant="outline" className="border-sky-300 text-sky-700">
-              Projeto #{selectedProject.id}
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1 text-sky-700 border-sky-300"
-              onClick={onRefresh}
-            >
-              <RefreshCw className="w-4 h-4" />
-              Atualizar
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {!hasDocuments ? (
-            <div className="rounded-lg border border-dashed border-sky-200 bg-sky-50/60 p-6 text-center text-sm text-sky-700">
-              Nenhum documento foi enviado ainda.
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-6">
+        {/* DOCUMENTOS */}
+        <Card className="border-2 border-sky-200">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-sky-800">
+                <ClipboardList className="w-5 h-5" />
+                Documentos do Projeto
+              </CardTitle>
+              <CardDescription>
+                Todos os documentos enviados e vinculados ao projeto.
+              </CardDescription>
             </div>
-          ) : (
-            <ScrollArea className="max-h-[420px] rounded-md border border-sky-100 bg-white">
-              <div className="divide-y">
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-sky-50/60 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <FileText className="w-5 h-5 text-sky-600 mt-1" />
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-sm">
-                            {doc.original_filename || doc.stored_filename}
-                          </span>
-                          {doc.doc_type && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] border-sky-300 text-sky-700"
-                            >
-                              {doc.doc_type}
-                            </Badge>
+
+            <div className="flex flex-col items-end gap-2">
+              <Badge variant="outline" className="border-sky-300 text-sky-700">
+                Projeto #{selectedProject.id}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 text-sky-700 border-sky-300"
+                onClick={onRefresh}
+              >
+                <RefreshCw className="w-4 h-4" />
+                Atualizar
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {!hasDocuments ? (
+              <div className="rounded-lg border border-dashed border-sky-200 bg-sky-50/60 p-6 text-center text-sm text-sky-700">
+                Nenhum documento foi enviado ainda.
+              </div>
+            ) : (
+              <ScrollArea className="max-h-[420px] rounded-md border border-sky-100 bg-white">
+                <div className="divide-y">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-sky-50/60 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <FileText className="w-5 h-5 text-sky-600 mt-1" />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm">
+                              {doc.original_filename || doc.stored_filename}
+                            </span>
+
+                            {doc.doc_type && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-sky-300 text-sky-700"
+                              >
+                                {doc.doc_type}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {doc.uploaded_at && (
+                            <p className="text-[11px] text-gray-400">
+                              Enviado em{" "}
+                              {new Date(doc.uploaded_at).toLocaleString("pt-BR")}
+                            </p>
                           )}
                         </div>
+                      </div>
 
-                        {doc.uploaded_at && (
-                          <p className="text-[11px] text-gray-400">
-                            Enviado em{" "}
-                            {new Date(doc.uploaded_at).toLocaleString("pt-BR")}
-                          </p>
-                        )}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-sky-700 border-sky-300"
+                          onClick={() => handleDownload(doc)}
+                        >
+                          <FileDown className="w-3 h-3 mr-1" />
+                          Baixar
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-purple-700 border-purple-300"
+                          onClick={() => handleOpenOcr(doc)}
+                        >
+                          <FileSearch className="w-3 h-3 mr-1" />
+                          OCR
+                        </Button>
+
+                        {/*
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(doc)}
+                        >
+                          Remover
+                        </Button>
+                        */}
                       </div>
                     </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
 
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-sky-700 border-sky-300"
-                        onClick={() => handleDownload(doc)}
-                      >
-                        <FileDown className="w-3 h-3 mr-1" />
-                        Baixar
-                      </Button>
+        {/* UPLOAD */}
+        <Card className="border-2 border-emerald-200 bg-emerald-50/60">
+          <CardHeader>
+            <CardTitle className="text-emerald-800">
+              Upload de Documentos
+            </CardTitle>
+            <CardDescription>
+              Envie documentos vinculados ao projeto selecionado.
+            </CardDescription>
+          </CardHeader>
 
-                      {/*
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(doc)}
-                      >
-                        Remover
-                      </Button>
-                      */}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
+          <CardContent>
+            <UploadDocumento
+              projectId={selectedProject.id}
+              onUploaded={onRefresh}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* UPLOAD */}
-      <Card className="border-2 border-emerald-200 bg-emerald-50/60">
-        <CardHeader>
-          <CardTitle className="text-emerald-800">
-            Upload de Documentos
-          </CardTitle>
-          <CardDescription>
-            Envie documentos vinculados ao projeto selecionado.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <UploadDocumento
-            projectId={selectedProject.id}
-            onUploaded={onRefresh}
-          />
-        </CardContent>
-      </Card>
-    </div>
+      <OcrCard
+        document={ocrDocument}
+        open={ocrOpen}
+        onOpenChange={setOcrOpen}
+      />
+    </>
   );
 }

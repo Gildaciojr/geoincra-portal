@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { OnrConsultaCard } from "./automacao/OnrConsultaCard.jsx";
 import { RiDigitalCard } from "./automacao/RiDigitalCard.jsx";
+import { RiDigitalSolicitarCertidaoCard } from "./automacao/RiDigitalSolicitarCertidaoCard.jsx";
 import { JobsList } from "./automacao/JobsList.jsx";
 import { AutoCadTools } from "./AutoCadTools.jsx";
 import { AutomationRunningModal } from "./automacao/AutomationRunningModal.jsx";
@@ -14,8 +15,10 @@ export function AutomacaoTab({ selectedProject }) {
   return (
     <div className="space-y-6">
       {/* MODAL GLOBAL */}
-      <AutomationRunningModal open={running}
-      onOpenChange={setRunning} />
+      <AutomationRunningModal
+        open={running}
+        onOpenChange={setRunning}
+      />
 
       {/* ONR / SIG-RI */}
       <OnrConsultaCard
@@ -23,8 +26,14 @@ export function AutomacaoTab({ selectedProject }) {
         onCreated={() => setRunning(true)}
       />
 
-      {/* RI DIGITAL */}
+      {/* RI DIGITAL — CONSULTAR MATRÍCULAS */}
       <RiDigitalCard
+        selectedProject={selectedProject}
+        onCreated={() => setRunning(true)}
+      />
+
+      {/* RI DIGITAL — SOLICITAR CERTIDÃO */}
+      <RiDigitalSolicitarCertidaoCard
         selectedProject={selectedProject}
         onCreated={() => setRunning(true)}
       />

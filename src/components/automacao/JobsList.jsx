@@ -22,7 +22,7 @@ import { Download, RefreshCw } from "lucide-react";
  * - Exige projeto válido
  * - Polling automático enquanto houver job rodando
  * - Fecha modal automaticamente quando o job atual finaliza
- * - Exibe resultados ONR / SIG-RI de forma profissional
+ * - Exibe resultados RI / ONR de forma profissional
  */
 export function JobsList({ selectedProject, onFinished }) {
   const { token } = useAuth();
@@ -41,20 +41,13 @@ export function JobsList({ selectedProject, onFinished }) {
       const data = await listarJobs(token);
 
       // 🔒 filtra somente jobs do projeto atual
-      const filtered = data.filter(
-        (j) => j.project_id === selectedProject.id
-      );
+      const filtered = data.filter((j) => j.project_id === selectedProject.id);
 
       setJobs(filtered);
 
       // 🔥 FECHAMENTO AUTOMÁTICO DO MODAL
-      // considera sempre o job mais recente
       const lastJob = filtered[0];
-
-      if (
-        lastJob &&
-        (lastJob.status === "COMPLETED" || lastJob.status === "FAILED")
-      ) {
+      if (lastJob && (lastJob.status === "COMPLETED" || lastJob.status === "FAILED")) {
         onFinished?.();
       }
     } catch (err) {
@@ -85,14 +78,9 @@ export function JobsList({ selectedProject, onFinished }) {
   // 🔐 DOWNLOAD AUTENTICADO
   const handleDownload = async (resultId) => {
     try {
-      const res = await fetch(
-        `/api/automacoes/results/${resultId}/download`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`/api/automacoes/results/${resultId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -115,6 +103,13 @@ export function JobsList({ selectedProject, onFinished }) {
     }
   };
 
+  const renderJobTitle = (type) => {
+    if (type === "RI_DIGITAL_MATRICULA") return "RI Digital — Matrículas";
+    if (type === "RI_DIGITAL_SOLICITAR_CERTIDAO") return "RI Digital — Solicitar Certidão";
+    if (type === "ONR_SIGRI_CONSULTA") return "ONR / SIG-RI — Consulta Fundiária";
+    return type;
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -126,9 +121,7 @@ export function JobsList({ selectedProject, onFinished }) {
           onClick={loadJobs}
           disabled={loading || !selectedProject?.id}
         >
-          <RefreshCw
-            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-          />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </CardHeader>
 
@@ -154,16 +147,11 @@ export function JobsList({ selectedProject, onFinished }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold text-sm">
-                  {job.type === "RI_DIGITAL_MATRICULA"
-                    ? "RI Digital — Matrículas"
-                    : job.type === "ONR_SIGRI_CONSULTA"
-                    ? "ONR / SIG-RI — Consulta Fundiária"
-                    : job.type}
+                  {renderJobTitle(job.type)}
                 </p>
 
                 <p className="text-xs text-gray-500">
-                  Criado em{" "}
-                  {new Date(job.created_at).toLocaleString("pt-BR")}
+                  Criado em {new Date(job.created_at).toLocaleString("pt-BR")}
                 </p>
               </div>
 
@@ -179,29 +167,61 @@ export function JobsList({ selectedProject, onFinished }) {
                     className="bg-white border rounded-lg p-3 space-y-2"
                   >
                     {/* INFO BÁSICA */}
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 space-y-1">
                       {r.protocolo && (
                         <div>
-                          Protocolo:{" "}
-                          <strong>{r.protocolo}</strong>
+                          Protocolo/Nº: <strong>{r.protocolo}</strong>
                         </div>
                       )}
 
                       {r.matricula && (
                         <div>
-                          Matrícula:{" "}
-                          <strong>{r.matricula}</strong>
+                          Matrícula/CNM: <strong>{r.matricula}</strong>
+                        </div>
+                      )}
+
+                      {r.cartorio && (
+                        <div>
+                          Cartório: <strong>{r.cartorio}</strong>
+                        </div>
+                      )}
+
+                      {/* 🔥 NOVOS CAMPOS (CERTIDÃO) */}
+                      {(r.metadata_json?.tipo_certidao ||
+                        r.metadata_json?.tipo_pedido ||
+                        r.metadata_json?.prazo) && (
+                        <div className="pt-2 space-y-1">
+                          {r.metadata_json?.tipo_certidao && (
+                            <div className="text-sm text-gray-600">
+                              Tipo de Certidão:{" "}
+                              <strong>{r.metadata_json.tipo_certidao}</strong>
+                            </div>
+                          )}
+
+                          {r.metadata_json?.tipo_pedido && (
+                            <div className="text-sm text-gray-600">
+                              Tipo de Pedido:{" "}
+                              <strong>{r.metadata_json.tipo_pedido}</strong>
+                            </div>
+                          )}
+
+                          {r.metadata_json?.prazo && (
+                            <div className="text-sm text-gray-600">
+                              Prazo: <strong>{r.metadata_json.prazo}</strong>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    {/* ALERTAS */}
+                    {/* ALERTAS RI DIGITAL (PDF) */}
                     {r.metadata_json?.pdf_status === "NAO_DISPONIVEL" && (
                       <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
                         PDF não disponível no RI Digital (prazo expirado)
                       </div>
                     )}
 
+                    {/* ALERTAS ONR */}
                     {r.metadata_json?.fonte === "ONR_SIGRI" &&
                       r.metadata_json?.download_disponivel === false && (
                         <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
@@ -209,16 +229,13 @@ export function JobsList({ selectedProject, onFinished }) {
                         </div>
                       )}
 
-                    {/* 🔥 DADOS DO IMÓVEL — ONR */}
+                    {/* DADOS ONR */}
                     {r.metadata_json?.fonte === "ONR_SIGRI" && (
-                      <OnrResultadoCard
-                        imovel={r.metadata_json.imovel}
-                      />
+                      <OnrResultadoCard imovel={r.metadata_json.imovel} />
                     )}
 
-                    {/* DOWNLOAD */}
-                    {r.file_path &&
-                    r.metadata_json?.pdf_status === "OK" ? (
+                    {/* DOWNLOAD (QUALQUER RESULT COM FILE) */}
+                    {r.file_path ? (
                       <Button
                         size="sm"
                         variant="outline"
