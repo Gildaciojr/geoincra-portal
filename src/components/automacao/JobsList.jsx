@@ -103,12 +103,24 @@ export function JobsList({ selectedProject, onFinished }) {
     }
   };
 
-  const renderJobTitle = (type) => {
-    if (type === "RI_DIGITAL_MATRICULA") return "RI Digital — Matrículas";
-    if (type === "RI_DIGITAL_SOLICITAR_CERTIDAO") return "RI Digital — Solicitar Certidão";
-    if (type === "ONR_SIGRI_CONSULTA") return "ONR / SIG-RI — Consulta Fundiária";
-    return type;
-  };
+const renderJobTitle = (type) => {
+  switch (type) {
+    case "RI_DIGITAL_MATRICULA":
+      return "RI Digital — Matrículas";
+
+    case "RI_DIGITAL_SOLICITAR_CERTIDAO":
+      return "RI Digital — Solicitar Certidão";
+
+    case "RI_DIGITAL_CONSULTAR_CERTIDAO":
+      return "RI Digital — Consultar Certidão";
+
+    case "ONR_SIGRI_CONSULTA":
+      return "ONR / SIG-RI — Consulta Fundiária";
+
+    default:
+      return type;
+  }
+};
 
   return (
     <Card>

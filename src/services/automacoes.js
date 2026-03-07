@@ -81,6 +81,42 @@ export async function criarJobRiDigital(token, payload) {
 
 /**
  * =========================
+ * RI DIGITAL — CONSULTAR CERTIDÃO
+ * =========================
+ */
+export async function criarJobConsultarCertidao(token, payload) {
+  const res = await fetch("/api/automacoes/ri-digital/consultar/jobs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      project_id: Number(payload.project_id),
+      protocolo: String(payload.protocolo).trim(),
+    }),
+  });
+
+  let data = {};
+
+  try {
+    data = await res.json();
+  } catch {
+    // ignore erro de parse
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      data?.detail ||
+      `Erro ao consultar certidão (status ${res.status})`
+    );
+  }
+
+  return data;
+}
+
+/**
+ * =========================
  * JOBS
  * =========================
  */

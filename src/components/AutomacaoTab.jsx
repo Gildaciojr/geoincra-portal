@@ -8,6 +8,7 @@ import { RiDigitalSolicitarCertidaoCard } from "./automacao/RiDigitalSolicitarCe
 import { JobsList } from "./automacao/JobsList.jsx";
 import { AutoCadTools } from "./AutoCadTools.jsx";
 import { AutomationRunningModal } from "./automacao/AutomationRunningModal.jsx";
+import { RiDigitalConsultarCertidaoCard } from "./automacao/RiDigitalConsultarCertidaoCard.jsx";
 
 export function AutomacaoTab({ selectedProject }) {
   const [running, setRunning] = useState(false);
@@ -36,6 +37,10 @@ export function AutomacaoTab({ selectedProject }) {
       <RiDigitalSolicitarCertidaoCard
         selectedProject={selectedProject}
         onCreated={() => setRunning(true)}
+      />
+      <RiDigitalConsultarCertidaoCard
+        selectedProject={selectedProject}
+         onCreated={() => setRunning(true)}
       />
 
       {/* HISTÓRICO DE JOBS */}
